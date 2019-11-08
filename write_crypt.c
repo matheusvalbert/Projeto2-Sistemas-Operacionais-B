@@ -42,7 +42,7 @@ static void hexdump(unsigned char *buf, unsigned int len) {
         printk("\n");
 }
 
-int encrypt(unsigned char cifrado[]) {
+int encrypt(unsigned char cifrado[], int numop, int nbytes) {
 	struct crypto_skcipher *tfm;
 	struct skcipher_request *req;
 	struct scatterlist sg;
@@ -82,22 +82,12 @@ int encrypt(unsigned char cifrado[]) {
                 goto out;
         }
 
-	input[0] = 0x30;
-	input[1] = 0x31;
-	input[2] = 0x32;
-	input[3] = 0x33;
-	input[4] = 0x34;
-	input[5] = 0x35;
-	input[6] = 0x36;
-	input[7] = 0x37;
-	input[8] = 0x38;
-	input[9] = 0x39;
-	input[10] = 0x41;
-	input[11] = 0x42;
-	input[12] = 0x43;
-	input[13] = 0x44;
-	input[14] = 0x45;
-	input[15] = 0x46;
+	i=0;
+	while(i!=16) {
+
+		input[i] = cifrado[i+16*numop];
+		i++;
+	}
 
 	sg_init_one(&sg, input, DATA_SIZE);
 	skcipher_request_set_crypt(req, &sg, &sg, DATA_SIZE, NULL);
@@ -116,8 +106,19 @@ int encrypt(unsigned char cifrado[]) {
 		break;
 	}
 
-	for(i = 0; i < DATA_SIZE; i++)
-		cifrado[i] = input[i];
+	i=0;
+	while(i!=16) {
+
+		cifrado[i+16*numop] = input[i];
+		if(input[i] == 0) {
+
+			nbytes = i+16*numop;
+		}
+		else {
+			nbytes = i+16*numop+1;
+		}
+		i++;
+	}
 
 error_req:
 	skcipher_request_free(req);
@@ -131,14 +132,40 @@ out:
 
 asmlinkage ssize_t write_crypt(int fd, const void *buf, size_t nbytes)
 {
-	unsigned char cifrado[16], *file;
-	int i;
+	unsigned char *file;
+	int i, numop;
+	unsigned char string[512];
 
-	encrypt(cifrado);
+	for(i = 0; i< nbytes; i++) {
+		sprintf(&string[i], "%c",((char *)buf)[i]);
+	}
 
-	printk("output criptografia: "); hexdump(cifrado, DATA_SIZE);
+	printk("string copiada: %s\n", string);
+	
+	i = nbytes;
+	
+	while(i % 16 != 0) {
+			
+		string[i] = 0x00;	
+		i++;
+	}
+
+	nbytes = i;
+	numop = nbytes/16;
+
+	i = 0;
+	while(i!=numop) {
+
+		encrypt(string, i, nbytes);
+		i++;
+	}	
+
+	printk("output criptografia: "); hexdump(string, nbytes);
 
 	file = kmalloc(nbytes*2, GFP_KERNEL);
+
+	printk("nbyes: %i\n", nbytes);
+	printk("\n");
 
 	if (!file) {
 
@@ -147,8 +174,10 @@ asmlinkage ssize_t write_crypt(int fd, const void *buf, size_t nbytes)
         }
 
 	for(i = 0; i< nbytes; i++) {
-		sprintf(&file[i*2], "%02x",cifrado[i]);
+		sprintf(&file[i*2], "%02x", string[i]);
 	}
+
+	printk("output file: "); hexdump(file, nbytes*2);
 
 	if (fd >= 0) {
 		mm_segment_t old_fs = get_fs();

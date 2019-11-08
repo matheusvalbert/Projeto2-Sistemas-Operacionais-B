@@ -8,43 +8,117 @@
 #include<fcntl.h>
 #include<unistd.h>
 #include <stdio_ext.h>
+#include <string.h>
+
+static void hexdump(unsigned char *buf, unsigned int len) {
+
+        while (len--)
+	{
+		printf("%c", *buf++);
+	}
+
+        printf("\n");
+}
 
 int main()
 {  
 	void *buf;
-	int fd, i;
+	int fd, i, qtd_caracteres, k = 0;
 	long int ret_status;
+	int multiplo;
+	char string[512], string1[512], local[100], *result;
+	FILE *fp;
+
+	printf("\nDigite o local do arquivo: ex: /home...: ");
+	__fpurge(stdin);
+	fgets(local, sizeof(local), stdin);
 	
-	printf("String: ");
+	printf("\nDigite a string para ser criptografada: ");
+	__fpurge(stdin);
+	fgets(string, sizeof(string), stdin);
+
+	qtd_caracteres = strlen(string) -1;
+
+	printf("\nString a ser criptografada: %s", string);
 
 	__fpurge(stdin);
 
-	fd = open("/home/matheus/Desktop/arquivo.txt", O_RDONLY);
-         
-	ret_status = syscall(333, fd, buf, 32); // 333 read
-
+	buf = string;
+	remove(local);
+	fd = open(local, O_WRONLY|O_CREAT, 0644);
+	ret_status = syscall(334, fd, buf, qtd_caracteres); // 334 write
 	close(fd);
 
-	for(i = 0; i < 32; i++)
+	__fpurge(stdin);
+	
+	multiplo = qtd_caracteres;
+
+	while(multiplo >31) {
+
+		multiplo -= 32;
+		k++;
+	}
+
+	if(multiplo != 0)
+		k++;
+
+	__fpurge(stdin);
+
+	fp = fopen(local, "r");
+	if(fp == NULL) {
+		printf("Problema leitura");
+		return 1;
+	}
+
+	fseek(fp, 0, SEEK_SET);
+	result = fgets(string1, k*32, fp);
+
+	__fpurge(stdin);
+	
+	if(result)
+		printf("\nString criptografada: "); hexdump(string1, k*32);
+
+	fclose(fp);
+
+	printf("\nString Descriptografada: ");
+
+	__fpurge(stdin);
+
+	fd = open(local, O_RDONLY);
+        buf = string;
+	ret_status = syscall(333, fd, buf, k*32); // 333 read
+	close(fd);
+
+	__fpurge(stdin);
+
+	for(i = 0; i < qtd_caracteres; i++)
 		printf("%c", ((uint8_t*)buf)[i]);
 	printf("\n");
 
-/*
-	remove("/home/matheus/Desktop/arquivo.txt");
-
-	fd = open("/home/matheus/Desktop/arquivo.txt", O_WRONLY|O_CREAT, 0644);
-         
-	ret_status = syscall(334, fd, "aaaaa\n", 16); // 334 write
-
-	close(fd);
-         
-	if(ret_status == 0)
-		printf("escrita efetuada\n");
-    	else 
-		printf("Erro na escrita\n");
-
 	__fpurge(stdin);
-*/
 
 	return 0;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
