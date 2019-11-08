@@ -83,21 +83,21 @@ int encrypt(unsigned char cifrado[]) {
         }
 
 	input[0] = 0x30;
-	input[1] = 0x30;
-	input[2] = 0x30;
-	input[3] = 0x30;
-	input[4] = 0x30;
-	input[5] = 0x30;
-	input[6] = 0x30;
-	input[7] = 0x30;
-	input[8] = 0x30;
-	input[9] = 0x30;
-	input[10] = 0x30;
-	input[11] = 0x30;
-	input[12] = 0x30;
-	input[13] = 0x30;
-	input[14] = 0x30;
-	input[15] = 0x30;
+	input[1] = 0x31;
+	input[2] = 0x32;
+	input[3] = 0x33;
+	input[4] = 0x34;
+	input[5] = 0x35;
+	input[6] = 0x36;
+	input[7] = 0x37;
+	input[8] = 0x38;
+	input[9] = 0x39;
+	input[10] = 0x41;
+	input[11] = 0x42;
+	input[12] = 0x43;
+	input[13] = 0x44;
+	input[14] = 0x45;
+	input[15] = 0x46;
 
 	sg_init_one(&sg, input, DATA_SIZE);
 	skcipher_request_set_crypt(req, &sg, &sg, DATA_SIZE, NULL);

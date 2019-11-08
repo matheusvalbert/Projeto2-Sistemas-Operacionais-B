@@ -89,7 +89,7 @@ static void hexdump(unsigned char *buf, unsigned int len) {
         printk("\n");
 }
 
-int decrypt(unsigned char cifrar[]) {
+int decrypt(unsigned char cifrar[], int numop, int nbytes) {
 
 struct crypto_skcipher *tfm;
 	struct skcipher_request *req;
@@ -130,8 +130,12 @@ struct crypto_skcipher *tfm;
                 goto out;
         }
 
-	for(i = 0; i < DATA_SIZE; i++)
-		input[i] = cifrar[i];
+	i=0;
+	while(i!=16) {
+
+		input[i] = cifrar[i+16*numop];
+		i++;
+	}
 
 	sg_init_one(&sg, input, DATA_SIZE);
 	skcipher_request_set_crypt(req, &sg, &sg, DATA_SIZE, NULL);
@@ -139,7 +143,7 @@ struct crypto_skcipher *tfm;
 
 	ret = crypto_skcipher_decrypt(req);
 
-	printk("output descriptografado: "); hexdump(input, DATA_SIZE);
+	//printk("output descriptografado: "); hexdump(input, DATA_SIZE);
 
 	switch (ret) {
 	case 0:
@@ -150,11 +154,20 @@ struct crypto_skcipher *tfm;
 		break;
 	}
 
-	input[16] = '\0';
+	i=0;
+	while(i!=16) {
 
-	printk("string descriptografada: %s\n", input);
+		cifrar[i+16*numop] = input[i];
+		if(input[i] == 0) {
 
-	printk("\n");
+			nbytes = i+16*numop;
+		}
+		else {
+			nbytes = i+16*numop+1;
+		}
+		i++;
+	}
+
 
 error_req:
 	skcipher_request_free(req);
@@ -168,39 +181,45 @@ out:
 
 asmlinkage ssize_t read_crypt(int fd, void *buf, size_t nbytes) {
 
-	unsigned char string[33];
-	int i=0, j=0;
+	int i=0, j=0, numop = 0;
+	mm_segment_t old_fs;
 
 	if (fd >= 0) {
-		mm_segment_t old_fs = get_fs();
+
+		old_fs = get_fs();
   		set_fs(KERNEL_DS);
-		sys_read(fd, string, nbytes*2);
-		set_fs(old_fs);
-		printk("leitura: %s", string);
+		sys_read(fd, buf, nbytes*2);
+		printk("leitura: %s", ((uint8_t*)buf));
 		printk("\n");
 
 		i=0;
 		//Transforma a string em numero hexa
-		while(string[i] != '\0') {
+		while(i != nbytes*2) {
 			
-			string[i] = convert(string[i]);
+			((uint8_t*)buf)[i] = convert(((uint8_t*)buf)[i]);
 			i++;
 		}
-
 		//Uniao dos numeros em hexa
 		i=0;
 		while(i != nbytes) {
 
-			string[i] = (string[j]<<4) + string[j+1];		
+			((uint8_t*)buf)[i] = (((uint8_t*)buf)[j]<<4) + ((uint8_t*)buf)[j+1];		
 			
 			i++;
 			j+=2;
 		}
 
-		printk("output criptografado: "); hexdump(string, DATA_SIZE);
+		numop = nbytes/16;
+		i = 0;
+		while(i!=numop) {
 
-		decrypt(string);
-
+			decrypt(buf, i, nbytes);
+			i++;
+		}
+		for(i = 0; i < nbytes; i++)
+			printk("string: %c\n", ((uint8_t*)buf)[i]);
+		printk("output geral: "); hexdump(buf, nbytes);
+		set_fs(old_fs);
 		return 0;
 	}
 	else

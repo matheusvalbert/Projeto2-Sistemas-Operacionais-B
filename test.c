@@ -12,28 +12,29 @@
 int main()
 {  
 	void *buf;
-	int fd, j;
+	int fd, i;
 	long int ret_status;
+	
+	printf("String: ");
 
-	printf("leitura e escrita\n");
+	__fpurge(stdin);
 
 	fd = open("/home/matheus/Desktop/arquivo.txt", O_RDONLY);
          
-	ret_status = syscall(333, fd, buf, 4); // 333 read
+	ret_status = syscall(333, fd, buf, 32); // 333 read
 
 	close(fd);
 
-	if(ret_status == 0)
-		for(j = 0; j < 4; ++j)
-			printf("%c\n", ((uint8_t*) buf)[j]);
-	else
-		printf("Erro na leitura\n");
+	for(i = 0; i < 32; i++)
+		printf("%c", ((uint8_t*)buf)[i]);
+	printf("\n");
 
+/*
 	remove("/home/matheus/Desktop/arquivo.txt");
 
 	fd = open("/home/matheus/Desktop/arquivo.txt", O_WRONLY|O_CREAT, 0644);
          
-	ret_status = syscall(334, fd, "aaaaa\n", 4); // 334 write
+	ret_status = syscall(334, fd, "aaaaa\n", 16); // 334 write
 
 	close(fd);
          
@@ -41,6 +42,9 @@ int main()
 		printf("escrita efetuada\n");
     	else 
 		printf("Erro na escrita\n");
-          
+
+	__fpurge(stdin);
+*/
+
 	return 0;
 }
