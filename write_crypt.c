@@ -132,9 +132,8 @@ out:
 
 asmlinkage ssize_t write_crypt(int fd, const void *buf, size_t nbytes)
 {
-	unsigned char *file;
 	int i, numop;
-	unsigned char string[512];
+	unsigned char string[256], file[512];
 
 	for(i = 0; i< nbytes; i++) {
 		sprintf(&string[i], "%c",((char *)buf)[i]);
@@ -162,17 +161,6 @@ asmlinkage ssize_t write_crypt(int fd, const void *buf, size_t nbytes)
 
 	printk("output criptografia: "); hexdump(string, nbytes);
 
-	file = kmalloc(nbytes*2, GFP_KERNEL);
-
-	printk("nbyes: %i\n", nbytes);
-	printk("\n");
-
-	if (!file) {
-
-                printk("kmalloc(file) failed\n");
-                goto out;
-        }
-
 	for(i = 0; i< nbytes; i++) {
 		sprintf(&file[i*2], "%02x", string[i]);
 	}
@@ -184,12 +172,9 @@ asmlinkage ssize_t write_crypt(int fd, const void *buf, size_t nbytes)
 		set_fs(KERNEL_DS);
 		sys_write(fd, file, nbytes*2);
 		set_fs(old_fs);
-		kfree(file);
 		return 0;
   	}
 
-out:
-	kfree(file);
 	return 1;
 }
 
