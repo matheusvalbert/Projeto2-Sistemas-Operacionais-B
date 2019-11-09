@@ -10,6 +10,8 @@
 #include <stdio_ext.h>
 #include <string.h>
 
+///home/matheus/Desktop/arquivo.txt
+
 static void hexdump(unsigned char *buf, unsigned int len) {
 
         while (len--)
@@ -26,7 +28,7 @@ int main()
 	int fd, i, qtd_caracteres, k = 0;
 	long int ret_status;
 	int multiplo;
-	char string[512], string1[512], local[100], *result;
+	char string[512], string1[512], local[100], c;
 	FILE *fp;
 
 	printf("\nDigite o local do arquivo: ex: /home...: ");
@@ -39,7 +41,7 @@ int main()
 
 	qtd_caracteres = strlen(string) -1;
 
-	printf("\nString a ser criptografada: %s", string);
+	printf("\nString a ser criptografada: %s\n", string);
 
 	__fpurge(stdin);
 
@@ -64,20 +66,15 @@ int main()
 
 	__fpurge(stdin);
 
-	fp = fopen(local, "r");
+	fp = fopen(local, "rt");
 	if(fp == NULL) {
 		printf("Problema leitura");
 		return 1;
 	}
 
 	fseek(fp, 0, SEEK_SET);
-	result = fgets(string1, k*32, fp);
-
-	__fpurge(stdin);
-	
-	if(result)
-		printf("\nString criptografada: "); hexdump(string1, k*32);
-
+	fscanf(fp, "%s", string1);
+	printf("\nString criptografada: %s\n", string1);
 	fclose(fp);
 
 	printf("\nString Descriptografada: ");
